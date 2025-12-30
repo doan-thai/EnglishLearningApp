@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PolyGlot Coach - Luyện tập Đoạn Văn</title>
+    <title>PolyGlot Coach V3 - Split View</title>
     
     <!-- React & ReactDOM -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -20,182 +20,190 @@
 
     <style>
         body { font-family: 'Inter', sans-serif; }
-        .fade-in { animation: fadeIn 0.5s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        /* Custom scrollbar for textareas */
-        textarea::-webkit-scrollbar { width: 8px; }
-        textarea::-webkit-scrollbar-track { background: #f1f5f9; }
-        textarea::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        textarea::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        /* Scrollbar đẹp hơn */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800">
+<body class="bg-slate-100 text-slate-800 h-screen overflow-hidden flex flex-col">
 
-    <div id="root"></div>
+    <div id="root" class="flex-1 flex flex-col h-full"></div>
 
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useRef } = React;
 
         // --- Icons ---
-        const IconBook = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>;
-        const IconSend = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>;
-        const IconRefresh = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>;
-        const IconCheck = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>;
-        const IconPen = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>;
-        const IconLang = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>;
-        const IconRotate = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>;
-        const IconKey = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg>;
-        const IconSpeaker = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>;
-        const IconLayers = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>;
+        const IconBook = () => <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>;
+        const IconCheck = () => <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>;
+        const IconRefresh = () => <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>;
+        const IconSpeaker = () => <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>;
+        const IconKey = () => <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg>;
+        const IconArrowRight = () => <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>;
 
         const App = () => {
+            // --- State ---
             const [apiKey, setApiKey] = useState(localStorage.getItem('gemini_api_key') || '');
             const [showKeyInput, setShowKeyInput] = useState(!apiKey);
             
-            // --- State mới ---
-            const [scope, setScope] = useState('word'); // 'word' (Từ đơn) | 'paragraph' (Đoạn văn)
-            const [difficulty, setDifficulty] = useState('medium'); // 'easy', 'medium', 'hard'
+            const [scope, setScope] = useState('word'); // 'word' (List) | 'paragraph'
+            const [difficulty, setDifficulty] = useState('medium');
+            const [mode, setMode] = useState(1); // 1: Viết Anh, 2: Dịch Việt
             
-            const [inputData, setInputData] = useState(''); // Thay thế targetWord, dùng chung cho cả 2
-            const [mode, setMode] = useState(1); // 1: Viết Anh (Output Target: Eng), 2: Dịch Việt (Output Target: Viet)
-            const [step, setStep] = useState('input');
-            const [challengeText, setChallengeText] = useState('');
-            const [userAnswer, setUserAnswer] = useState('');
+            const [inputData, setInputData] = useState('');
+            const [step, setStep] = useState('input'); // input -> challenge
+            
+            // Data Structure cho Challenge
+            // Paragraph Mode: string
+            // Word Mode: Array [{ id: 1, word: 'cat', sentence: '...' }]
+            const [challenges, setChallenges] = useState(null); 
+            
+            // Data Structure cho User Answer
+            // Paragraph Mode: string
+            // Word Mode: Object { 0: "answer1", 1: "answer2" }
+            const [userAnswers, setUserAnswers] = useState({});
+            
+            // Data Structure cho Feedback
             const [feedback, setFeedback] = useState(null);
+            
             const [loading, setLoading] = useState(false);
             const [error, setError] = useState('');
+            const rightColumnRef = useRef(null);
 
-            // Lưu API key
-            const saveApiKey = (key) => {
+            // --- Helpers ---
+            const saveApiKey = (rawKey) => {
+                const key = rawKey.trim();
+                if (!key.startsWith('AIza')) {
+                    setError('Key không hợp lệ (Phải bắt đầu bằng AIza)');
+                    return;
+                }
                 setApiKey(key);
                 localStorage.setItem('gemini_api_key', key);
                 setShowKeyInput(false);
+                setError('');
             };
 
-            const speakText = (text, lang = 'en-US') => {
+            const speakText = (text) => {
                 if (!window.speechSynthesis) return;
                 window.speechSynthesis.cancel();
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = lang;
-                utterance.rate = 0.9;
-                window.speechSynthesis.speak(utterance);
+                const u = new SpeechSynthesisUtterance(text);
+                u.lang = 'en-US';
+                u.rate = 0.9;
+                window.speechSynthesis.speak(u);
             };
 
-            const callGemini = async (prompt, systemInstruction = "") => {
-                if (!apiKey) throw new Error("Vui lòng nhập API Key trước.");
+            const parseJSON = (text) => {
                 try {
-                    const response = await fetch(
-                        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-                        {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                contents: [{ parts: [{ text: prompt }] }],
-                                systemInstruction: { parts: [{ text: systemInstruction }] },
-                                generationConfig: { responseMimeType: "application/json" }
-                            }),
-                        }
-                    );
-                    if (!response.ok) {
-                        const errData = await response.json();
-                        throw new Error(errData.error?.message || 'Lỗi kết nối API');
-                    }
-                    const data = await response.json();
-                    return JSON.parse(data.candidates?.[0]?.content?.parts?.[0]?.text);
-                } catch (err) { throw err; }
+                    // Cố gắng lọc markdown block nếu AI trả về ```json ... ```
+                    const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+                    return JSON.parse(cleanText);
+                } catch (e) {
+                    console.error("JSON Parse Error:", text);
+                    throw new Error("AI trả về định dạng lỗi. Vui lòng thử lại.");
+                }
             };
 
-            const handleGenerateChallenge = async () => {
+            const callGemini = async (prompt, sysInstruct) => {
+                if (!apiKey) throw new Error("Thiếu API Key");
+                const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        systemInstruction: { parts: [{ text: sysInstruct }] },
+                        generationConfig: { responseMimeType: "application/json" }
+                    })
+                });
+                if (!resp.ok) throw new Error("Lỗi kết nối API hoặc hết lượt.");
+                const data = await resp.json();
+                return parseJSON(data.candidates?.[0]?.content?.parts?.[0]?.text);
+            };
+
+            // --- Logic Tạo Đề Bài ---
+            const handleGenerate = async () => {
                 if (!inputData.trim()) return;
-                setLoading(true); setError(''); setFeedback(null); setUserAnswer('');
+                setLoading(true); setError(''); setFeedback(null); setUserAnswers({});
                 
                 try {
                     let prompt = "";
-                    const sysInstruct = "Bạn là trợ lý ngôn ngữ AI chuyên nghiệp. Luôn trả về định dạng JSON: { \"content\": \"...\" }";
-                    
-                    const levelDesc = difficulty === 'easy' ? 'câu đơn giản, từ vựng thông dụng' 
-                                    : difficulty === 'medium' ? 'câu phức vừa phải, tự nhiên' 
-                                    : 'cấu trúc ngữ pháp nâng cao, học thuật, văn phong báo chí';
+                    let sys = "Bạn là trợ lý ngôn ngữ. Trả về JSON thuần túy.";
+                    const words = inputData.split(/[\n,;]+/).map(w => w.trim()).filter(w => w);
 
-                    // --- LOGIC TẠO ĐỀ BÀI ---
                     if (scope === 'word') {
-                        // Chế độ từ đơn (Giữ nguyên logic cũ)
-                        if (mode === 1) { // Luyện viết Anh -> Đề bài Tiếng Việt
-                            prompt = `Từ vựng: "${inputData}". Tạo 1 câu tiếng Việt chứa nghĩa từ này. KHÔNG dùng từ tiếng Anh đó. Format JSON: { "content": "câu tiếng việt" }`;
-                        } else { // Luyện dịch Việt -> Đề bài Tiếng Anh
-                            prompt = `Từ vựng: "${inputData}". Tạo 1 câu tiếng Anh (${levelDesc}) chứa từ "${inputData}". Format JSON: { "content": "câu tiếng anh" }`;
+                        // Word Mode: Generate List
+                        sys += " Output format: { \"items\": [ { \"word\": \"...\", \"sentence\": \"...\" } ] }";
+                        if (mode === 1) { // Luyện viết Anh -> Câu Việt
+                            prompt = `Danh sách từ: ${words.join(', ')}. Với MỖI từ, hãy tạo 1 câu tiếng Việt chứa nghĩa của nó (KHÔNG dùng từ tiếng Anh đó).`;
+                        } else { // Luyện dịch Việt -> Câu Anh
+                            prompt = `Danh sách từ: ${words.join(', ')}. Với MỖI từ, hãy tạo 1 câu tiếng Anh (${difficulty}) chứa từ đó.`;
                         }
                     } else {
-                        // Chế độ Đoạn văn (Mới)
-                        if (mode === 1) { 
-                            // Luyện viết Anh -> Đề bài là Đoạn văn Tiếng Việt
-                            // Yêu cầu: Viết tiếng Việt sao cho khi dịch sang Anh sẽ dùng các từ trong list
-                            prompt = `
-                            Danh sách từ tiếng Anh cần luyện: ${inputData}.
-                            Hãy viết một đoạn văn tiếng Việt (${levelDesc}, khoảng 100-150 từ).
-                            Đoạn văn này phải có nội dung sao cho khi người dùng dịch ngược lại sang tiếng Anh, họ BẮT BUỘC hoặc TỰ NHIÊN NHẤT phải sử dụng các từ trong danh sách trên.
-                            Tuyệt đối không chèn từ tiếng Anh vào đoạn văn tiếng Việt.
-                            Output JSON: { "content": "đoạn văn tiếng việt..." }`;
+                        // Paragraph Mode
+                        sys += " Output format: { \"content\": \"...\" }";
+                        const level = difficulty === 'hard' ? 'nâng cao, học thuật' : 'thông dụng';
+                        if (mode === 1) {
+                            prompt = `Viết đoạn văn tiếng Việt (${level}) sao cho khi dịch sang Anh bắt buộc phải dùng các từ: ${words.join(', ')}.`;
                         } else {
-                            // Luyện dịch Việt -> Đề bài là Đoạn văn Tiếng Anh
-                            prompt = `
-                            Danh sách từ vựng: ${inputData}.
-                            Hãy viết một đoạn văn tiếng Anh (${levelDesc}, khoảng 100-150 từ) kết nối logic tất cả các từ này.
-                            Nội dung phải mạch lạc, hấp dẫn.
-                            Output JSON: { "content": "đoạn văn tiếng anh..." }`;
+                            prompt = `Viết đoạn văn tiếng Anh (${level}) kết nối các từ: ${words.join(', ')}.`;
                         }
                     }
 
-                    const result = await callGemini(prompt, sysInstruct);
-                    setChallengeText(result.content);
+                    const res = await callGemini(prompt, sys);
+                    
+                    if (scope === 'word') {
+                        setChallenges(res.items);
+                    } else {
+                        setChallenges(res.content);
+                    }
                     setStep('challenge');
                 } catch (err) {
                     setError(err.message);
-                    if(err.message.includes('Key') || err.message.includes('400')) setShowKeyInput(true);
                 } finally {
                     setLoading(false);
                 }
             };
 
-            const handleCheckAnswer = async () => {
-                if (!userAnswer.trim()) return;
+            // --- Logic Chấm Điểm ---
+            const handleCheck = async () => {
                 setLoading(true); setError('');
-                
                 try {
                     let prompt = "";
-                    const sysInstruct = `Bạn là giáo viên ngôn ngữ chấm bài kỹ lưỡng. 
-                    Trả về JSON: { 
-                        "score": number (thang 10), 
-                        "correction": "bài sửa hoàn chỉnh đúng nhất", 
-                        "explanation": "giải thích lỗi sai (nếu là đoạn văn hãy chỉ ra các lỗi ngữ pháp/từ vựng chính, đừng quá dài dòng)" 
-                    }`;
+                    let sys = "";
 
-                    const typeText = scope === 'word' ? 'câu' : 'đoạn văn';
+                    if (scope === 'word') {
+                        // Batch Evaluation
+                        sys = `Bạn là giáo viên. Trả về JSON: { "results": [ { "score": number, "correction": "string", "explanation": "string" } ] }. Thứ tự mảng kết quả phải khớp với thứ tự mảng đầu vào.`;
+                        
+                        // Chuẩn bị dữ liệu gửi đi
+                        const submission = challenges.map((c, idx) => ({
+                            original_word: c.word,
+                            question_context: c.sentence,
+                            user_answer: userAnswers[idx] || ""
+                        }));
 
-                    if (mode === 1) { 
-                        // Mode 1: Đề Việt -> Đáp án Anh
-                        prompt = `
-                        Yêu cầu: Người dùng phải viết ${typeText} tiếng Anh dựa trên:
-                        1. Từ vựng bắt buộc dùng: ${inputData}
-                        2. Ngữ cảnh (Tiếng Việt): ${challengeText}
+                        prompt = `Chấm điểm danh sách bài làm sau:\n${JSON.stringify(submission)}\n
+                        Yêu cầu: 
+                        - Mode: ${mode === 1 ? "Đề Việt -> Đáp án Anh" : "Đề Anh -> Đáp án Việt"}
+                        - Nếu Mode 1: Kiểm tra xem user có dùng đúng từ gốc (original_word) không và ngữ pháp đúng không.
+                        - Nếu Mode 2: Kiểm tra bản dịch tiếng Việt có tự nhiên không.`;
                         
-                        Bài làm của người dùng: ${userAnswer}
-                        
-                        Nhiệm vụ: Chấm điểm. Kiểm tra xem người dùng có dùng đúng các từ bắt buộc không? Ngữ pháp có đúng không?`;
                     } else {
-                        // Mode 2: Đề Anh -> Đáp án Việt
-                        prompt = `
-                        Yêu cầu: Người dùng dịch ${typeText} sau sang tiếng Việt:
-                        Ngữ cảnh (Tiếng Anh): ${challengeText}
-                        
-                        Bài làm của người dùng: ${userAnswer}
-                        
-                        Nhiệm vụ: Chấm điểm. Kiểm tra xem bản dịch có sát nghĩa, trôi chảy và tự nhiên không?`;
+                        // Paragraph Evaluation
+                        sys = `Bạn là giáo viên. Trả về JSON: { "score": number, "correction": "string", "explanation": "string" }`;
+                        prompt = `Đề bài: ${challenges}\nBài làm của user: ${userAnswers['paragraph']}\nMode: ${mode === 1 ? "Viết Anh" : "Dịch Việt"}. Chấm điểm, sửa lỗi và giải thích chi tiết.`;
                     }
 
-                    const result = await callGemini(prompt, sysInstruct);
-                    setFeedback(result);
-                    setStep('result');
+                    const res = await callGemini(prompt, sys);
+                    
+                    // Nếu word mode, map kết quả vào ID
+                    setFeedback(res); 
+                    
+                    // Scroll cột phải lên đầu để xem kết quả
+                    if(rightColumnRef.current) rightColumnRef.current.scrollTop = 0;
+
                 } catch (err) {
                     setError(err.message);
                 } finally {
@@ -203,192 +211,183 @@
                 }
             };
 
-            const handleReset = () => {
-                setStep('input');
-                setInputData('');
-                setChallengeText('');
-                setUserAnswer('');
-                setFeedback(null);
-            };
-
+            // --- UI Components ---
             return (
-                <div className="min-h-screen bg-slate-50 p-4 md:p-8 flex flex-col items-center font-sans">
-                    <header className="mb-6 text-center">
-                        <div className="flex items-center justify-center gap-2 mb-2">
+                <div className="flex flex-col h-full bg-slate-50">
+                    {/* Header */}
+                    <header className="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center shadow-sm z-10">
+                        <div className="flex items-center gap-2">
                             <span className="text-indigo-600"><IconBook /></span>
-                            <h1 className="text-3xl font-bold text-slate-900">PolyGlot Coach</h1>
+                            <h1 className="text-xl font-bold text-slate-900">PolyGlot Coach <span className="text-xs font-normal text-slate-500 px-2 py-1 bg-slate-100 rounded-full">V3 Split View</span></h1>
                         </div>
-                        <p className="text-slate-500 text-sm">AI Writing & Translation Trainer</p>
+                        <button onClick={() => setShowKeyInput(true)} className="text-sm font-medium text-slate-500 hover:text-indigo-600 flex items-center gap-1">
+                            <IconKey /> {apiKey ? 'Đổi Key' : 'Nhập Key'}
+                        </button>
                     </header>
 
                     {/* API Key Modal */}
                     {showKeyInput && (
-                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                            <div className="bg-white p-6 rounded-xl shadow-2xl max-w-md w-full">
-                                <h3 className="text-lg font-bold mb-2 flex items-center gap-2"><IconKey /> Cấu hình API Key</h3>
-                                <p className="text-sm text-slate-600 mb-4">Nhập Gemini API Key miễn phí từ <a href="https://aistudio.google.com/app/apikey" target="_blank" className="text-indigo-600 underline">Google AI Studio</a>.</p>
-                                <input type="password" placeholder="Paste key here..." className="w-full p-3 border rounded-lg mb-4 outline-none focus:ring-2 focus:ring-indigo-500" onChange={(e) => setApiKey(e.target.value)} value={apiKey} />
-                                <button onClick={() => apiKey && saveApiKey(apiKey)} className="w-full bg-indigo-600 text-white py-3 rounded-lg font-bold hover:bg-indigo-700">Lưu & Bắt đầu</button>
+                        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                            <div className="bg-white p-6 rounded-2xl shadow-2xl max-w-md w-full">
+                                <h3 className="text-lg font-bold mb-3">Cấu hình API Key</h3>
+                                <input type="text" placeholder="AIza..." className="w-full p-3 border rounded-lg mb-4 bg-slate-50 font-mono text-sm" value={apiKey} onChange={e => setApiKey(e.target.value)} />
+                                <button onClick={() => saveApiKey(apiKey)} className="w-full bg-indigo-600 text-white py-3 rounded-lg font-bold hover:bg-indigo-700">Xác nhận</button>
                             </div>
                         </div>
                     )}
 
-                    <div className="w-full max-w-3xl bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-100 flex flex-col">
+                    {/* MAIN CONTENT SPLIT VIEW */}
+                    <div className="flex-1 flex overflow-hidden">
                         
-                        {/* 1. Scope Selection (Word vs Paragraph) */}
-                        {step === 'input' && (
-                            <div className="flex bg-slate-100 p-1 mx-4 mt-4 rounded-lg">
-                                <button onClick={() => setScope('word')} className={`flex-1 py-2 rounded-md text-sm font-semibold transition-all ${scope === 'word' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-                                    Từ đơn
-                                </button>
-                                <button onClick={() => setScope('paragraph')} className={`flex-1 py-2 rounded-md text-sm font-semibold transition-all flex items-center justify-center gap-1 ${scope === 'paragraph' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-                                    <IconLayers /> Đoạn văn (List)
-                                </button>
-                            </div>
-                        )}
-
-                        {/* 2. Mode Selection (Write Eng vs Translate Viet) */}
-                        {step === 'input' && (
-                            <div className="flex border-b border-slate-100 mt-4">
-                                <button onClick={() => setMode(1)} className={`flex-1 py-4 flex items-center justify-center gap-2 font-medium transition-colors ${mode === 1 ? 'border-b-2 border-indigo-600 text-indigo-700 bg-indigo-50/50' : 'text-slate-500 hover:bg-slate-50'}`}>
-                                    <IconPen /> Luyện Viết (Anh)
-                                </button>
-                                <button onClick={() => setMode(2)} className={`flex-1 py-4 flex items-center justify-center gap-2 font-medium transition-colors ${mode === 2 ? 'border-b-2 border-indigo-600 text-indigo-700 bg-indigo-50/50' : 'text-slate-500 hover:bg-slate-50'}`}>
-                                    <IconLang /> Luyện Dịch (Việt)
-                                </button>
-                            </div>
-                        )}
-
-                        <div className="p-6 md:p-8 flex-1 flex flex-col">
-                            {error && <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm">{error}</div>}
-
-                            {/* --- INPUT STEP --- */}
-                            {step === 'input' && (
-                                <div className="fade-in flex flex-col h-full">
-                                    <div className="mb-4">
-                                        <label className="block text-sm font-semibold text-slate-700 mb-2">
-                                            {scope === 'word' ? 'Nhập 1 từ vựng:' : 'Nhập danh sách từ vựng (cách nhau bởi dấu phẩy hoặc xuống dòng):'}
-                                        </label>
+                        {/* LEFT COLUMN: Input & Work Area */}
+                        <div className="w-full lg:w-1/2 flex flex-col border-r border-slate-200 bg-white h-full overflow-y-auto">
+                            
+                            {/* 1. Settings Area (Luôn hiện ở trên cùng cột trái) */}
+                            <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+                                {step === 'input' ? (
+                                    <div className="space-y-4 fade-in">
+                                        {error && <div className="p-3 bg-red-100 text-red-700 rounded-lg text-sm">{error}</div>}
                                         
-                                        {scope === 'word' ? (
-                                            <input 
-                                                value={inputData} onChange={(e) => setInputData(e.target.value)}
-                                                onKeyDown={(e) => e.key === 'Enter' && handleGenerateChallenge()}
-                                                placeholder="Ví dụ: resilient..."
-                                                className="w-full p-4 rounded-xl border border-slate-200 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all"
-                                            />
-                                        ) : (
-                                            <textarea 
-                                                value={inputData} onChange={(e) => setInputData(e.target.value)}
-                                                placeholder={`Ví dụ:\nrun\nfast\nbeautiful\n...`}
-                                                className="w-full p-4 rounded-xl border border-slate-200 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 min-h-[150px] transition-all"
-                                            />
-                                        )}
-                                    </div>
-
-                                    {/* Difficulty Selector (Chỉ hiện cho Đoạn văn hoặc Mode 2 của từ đơn) */}
-                                    <div className="mb-6">
-                                        <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Độ khó của bài tập</label>
                                         <div className="flex gap-2">
-                                            {['easy', 'medium', 'hard'].map(lv => (
-                                                <button 
-                                                    key={lv} 
-                                                    onClick={() => setDifficulty(lv)}
-                                                    className={`px-4 py-2 rounded-lg text-sm font-medium border capitalize ${difficulty === lv ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300'}`}
-                                                >
-                                                    {lv === 'easy' ? 'Dễ' : lv === 'medium' ? 'Vừa' : 'Khó'}
-                                                </button>
-                                            ))}
+                                            <button onClick={() => setScope('word')} className={`flex-1 py-2 rounded-lg text-sm font-semibold border ${scope==='word' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white border-slate-300'}`}>Từ đơn (Nhiều câu)</button>
+                                            <button onClick={() => setScope('paragraph')} className={`flex-1 py-2 rounded-lg text-sm font-semibold border ${scope==='paragraph' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white border-slate-300'}`}>Đoạn văn (1 bài)</button>
                                         </div>
-                                    </div>
 
-                                    <button onClick={handleGenerateChallenge} disabled={loading || !inputData} className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold hover:bg-indigo-700 disabled:bg-slate-300 flex justify-center items-center gap-2 shadow-lg shadow-indigo-200 transition-all">
-                                        {loading ? <span className="animate-spin"><IconRefresh/></span> : <IconSend/>} 
-                                        {loading ? 'Đang tạo bài...' : 'Tạo bài tập'}
-                                    </button>
-                                    
-                                    <div className="mt-4 text-center">
-                                         <button onClick={() => setShowKeyInput(true)} className="text-xs text-slate-400 hover:text-indigo-600 underline">Đổi API Key</button>
+                                        <div className="flex gap-2">
+                                            <button onClick={() => setMode(1)} className={`flex-1 py-2 rounded-lg text-sm font-medium border ${mode===1 ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-white border-slate-200'}`}>Luyện Viết (Anh)</button>
+                                            <button onClick={() => setMode(2)} className={`flex-1 py-2 rounded-lg text-sm font-medium border ${mode===2 ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-white border-slate-200'}`}>Luyện Dịch (Việt)</button>
+                                        </div>
+
+                                        <textarea 
+                                            value={inputData} onChange={e => setInputData(e.target.value)}
+                                            placeholder={scope === 'word' ? "Nhập danh sách từ (xuống dòng hoặc phẩy)...\nVí dụ:\nrun\nfast\nhappy" : "Nhập danh sách từ để viết đoạn văn..."}
+                                            className="w-full p-4 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-200 outline-none h-32 resize-none"
+                                        />
+
+                                        <button onClick={handleGenerate} disabled={loading || !inputData} className="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 flex justify-center items-center gap-2">
+                                            {loading ? <IconRefresh /> : <IconArrowRight />} {loading ? 'Đang tạo đề...' : 'Bắt đầu làm bài'}
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <span className="text-xs font-bold text-slate-500 uppercase block">Chế độ</span>
+                                            <span className="font-semibold text-slate-800">{scope === 'word' ? 'Bài tập từng câu' : 'Bài tập đoạn văn'}</span>
+                                        </div>
+                                        <button onClick={() => {setStep('input'); setFeedback(null);}} className="text-indigo-600 text-sm font-medium hover:underline">Tạo bài mới</button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* 2. Workspace Area (Nơi làm bài) */}
+                            {step === 'challenge' && (
+                                <div className="p-6 flex-1 bg-slate-50 space-y-6">
+                                    {scope === 'word' ? (
+                                        // WORD MODE LIST
+                                        challenges.map((item, idx) => (
+                                            <div key={idx} className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 fade-in" style={{animationDelay: `${idx * 0.1}s`}}>
+                                                <div className="flex justify-between items-start mb-3">
+                                                    <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded">Câu {idx + 1} ({item.word})</span>
+                                                    {mode === 2 && <button onClick={() => speakText(item.sentence)} className="text-indigo-500 hover:bg-indigo-50 p-1 rounded"><IconSpeaker /></button>}
+                                                </div>
+                                                <p className="text-lg text-slate-800 font-medium mb-4">{item.sentence}</p>
+                                                
+                                                <input 
+                                                    type="text"
+                                                    value={userAnswers[idx] || ''}
+                                                    onChange={(e) => setUserAnswers({...userAnswers, [idx]: e.target.value})}
+                                                    placeholder={mode === 1 ? "Viết lại câu bằng tiếng Anh..." : "Dịch câu này sang tiếng Việt..."}
+                                                    className="w-full p-3 border border-slate-300 rounded-lg focus:border-indigo-500 outline-none"
+                                                />
+                                            </div>
+                                        ))
+                                    ) : (
+                                        // PARAGRAPH MODE
+                                        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 fade-in">
+                                            <div className="flex justify-between mb-2">
+                                                <span className="text-xs font-bold text-slate-400 uppercase">Đề bài</span>
+                                                {mode === 2 && <button onClick={() => speakText(challenges)} className="text-indigo-500"><IconSpeaker /></button>}
+                                            </div>
+                                            <p className="text-lg leading-relaxed text-slate-800 mb-6 pb-6 border-b border-slate-100">{challenges}</p>
+                                            
+                                            <label className="block text-sm font-bold text-slate-700 mb-2">Bài làm của bạn:</label>
+                                            <textarea 
+                                                value={userAnswers['paragraph'] || ''}
+                                                onChange={(e) => setUserAnswers({...userAnswers, 'paragraph': e.target.value})}
+                                                className="w-full h-48 p-4 border border-slate-300 rounded-lg focus:border-indigo-500 outline-none resize-none"
+                                                placeholder={mode === 1 ? "Viết đoạn văn tiếng Anh..." : "Dịch đoạn văn sang tiếng Việt..."}
+                                            />
+                                        </div>
+                                    )}
+
+                                    {/* Submit Button */}
+                                    <div className="pt-4 pb-8">
+                                        <button onClick={handleCheck} disabled={loading} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 flex justify-center items-center gap-2">
+                                            {loading ? 'Đang chấm điểm...' : <><IconCheck /> Nộp bài & Xem kết quả</>}
+                                        </button>
                                     </div>
                                 </div>
                             )}
+                        </div>
 
-                            {/* --- CHALLENGE & RESULT STEPS --- */}
-                            {(step === 'challenge' || step === 'result') && (
-                                <div className="fade-in flex flex-col h-full">
-                                    {/* Display Challenge */}
-                                    <div className="mb-6 flex-1">
-                                        <div className="flex justify-between items-end mb-2">
-                                            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Đề bài ({scope === 'word' ? 'Câu' : 'Đoạn văn'})</span>
-                                            <div className="flex gap-2">
-                                                {/* Nút nghe chỉ hiện nếu đề bài là tiếng Anh */}
-                                                {(mode === 2) && (
-                                                    <button onClick={() => speakText(challengeText)} className="text-indigo-600 hover:bg-indigo-50 px-3 py-1 rounded-full text-sm flex items-center gap-1 font-medium transition-colors">
-                                                        <IconSpeaker /> Nghe
-                                                    </button>
-                                                )}
-                                                <button onClick={handleReset} className="text-slate-400 hover:text-red-500 px-2 text-sm flex items-center gap-1 transition-colors"><IconRotate/> Tạo mới</button>
-                                            </div>
-                                        </div>
-                                        <div className="p-6 bg-slate-50 rounded-xl text-lg md:text-xl text-slate-800 border border-slate-200 leading-relaxed shadow-sm whitespace-pre-wrap">
-                                            {challengeText}
-                                        </div>
+                        {/* RIGHT COLUMN: Results & Feedback (Sticky) */}
+                        <div ref={rightColumnRef} className="hidden lg:block w-1/2 h-full bg-slate-100 overflow-y-auto border-l border-slate-200">
+                            {!feedback ? (
+                                <div className="h-full flex flex-col items-center justify-center text-slate-400 p-8 text-center">
+                                    <div className="w-16 h-16 bg-slate-200 rounded-full flex items-center justify-center mb-4">
+                                        <IconCheck />
+                                    </div>
+                                    <h3 className="font-semibold text-lg text-slate-600">Khu vực Chấm điểm</h3>
+                                    <p className="text-sm max-w-xs mt-2">Kết quả đánh giá, sửa lỗi chi tiết từ AI sẽ hiển thị ở đây sau khi bạn nộp bài.</p>
+                                </div>
+                            ) : (
+                                <div className="p-8 space-y-6 fade-in">
+                                    <div className="flex items-center justify-between">
+                                        <h2 className="text-2xl font-bold text-slate-800">Kết quả chi tiết</h2>
+                                        {scope === 'paragraph' && (
+                                            <span className={`px-4 py-2 rounded-full font-bold text-white ${feedback.score >= 8 ? 'bg-green-500' : 'bg-orange-500'}`}>
+                                                {feedback.score}/10
+                                            </span>
+                                        )}
                                     </div>
 
-                                    {/* User Input Area */}
-                                    <div className="mb-6">
-                                        <label className="block text-sm font-semibold text-slate-700 mb-2">
-                                            {mode === 1 ? "Viết bài làm của bạn (Tiếng Anh):" : "Viết bài dịch của bạn (Tiếng Việt):"}
-                                        </label>
-                                        <textarea 
-                                            value={userAnswer} onChange={(e) => setUserAnswer(e.target.value)}
-                                            disabled={step === 'result' || loading}
-                                            placeholder={scope === 'paragraph' ? "Hãy dịch/viết đoạn văn hoàn chỉnh..." : "Nhập câu trả lời..."}
-                                            className={`w-full p-4 rounded-xl border outline-none text-lg resize-none transition-all ${step === 'result' ? 'bg-white border-slate-200 text-slate-600' : 'bg-white border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 shadow-sm'}`}
-                                            style={{ minHeight: scope === 'paragraph' ? '150px' : '100px' }}
-                                        />
-                                    </div>
-
-                                    {/* Action Button */}
-                                    {step === 'challenge' && (
-                                        <button onClick={handleCheckAnswer} disabled={loading || !userAnswer} className="w-full bg-indigo-600 text-white p-4 rounded-xl font-bold hover:bg-indigo-700 disabled:bg-slate-300 flex justify-center items-center gap-2 shadow-lg shadow-indigo-200 transition-all">
-                                            {loading ? "AI đang chấm điểm..." : <><IconCheck/> Gửi bài & Chấm điểm</>}
-                                        </button>
-                                    )}
-
-                                    {/* Result Feedback */}
-                                    {step === 'result' && feedback && (
-                                        <div className={`p-6 rounded-xl border-2 mb-6 shadow-sm fade-in ${feedback.score >= 9 ? 'bg-green-50 border-green-200' : feedback.score >= 7 ? 'bg-blue-50 border-blue-200' : 'bg-orange-50 border-orange-200'}`}>
-                                            <div className="flex items-center justify-between mb-4 pb-4 border-b border-black/5">
-                                                <h3 className="font-bold text-lg text-slate-800">Kết quả đánh giá</h3>
-                                                <div className={`px-4 py-1 rounded-full text-sm font-extrabold ${feedback.score >= 9 ? 'bg-green-200 text-green-800' : feedback.score >= 7 ? 'bg-blue-200 text-blue-800' : 'bg-orange-200 text-orange-800'}`}>
-                                                    {feedback.score}/10
+                                    {scope === 'word' ? (
+                                        // LIST FEEDBACK
+                                        feedback.results.map((res, idx) => (
+                                            <div key={idx} className={`p-5 rounded-xl border-2 bg-white ${res.score >= 8 ? 'border-green-100' : 'border-orange-100'}`}>
+                                                <div className="flex justify-between items-center mb-3">
+                                                    <span className="text-sm font-bold text-slate-500">Câu {idx + 1}</span>
+                                                    <span className={`text-xs font-bold px-2 py-1 rounded ${res.score >= 8 ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                                                        {res.score}/10
+                                                    </span>
+                                                </div>
+                                                
+                                                <div className="mb-3">
+                                                    <p className="text-xs text-slate-400 uppercase mb-1">Đáp án gợi ý:</p>
+                                                    <div className="flex items-start gap-2">
+                                                        <p className="font-medium text-slate-800">{res.correction}</p>
+                                                        {mode===1 && <button onClick={() => speakText(res.correction)} className="text-indigo-500 mt-1"><IconSpeaker/></button>}
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="pt-3 border-t border-slate-100">
+                                                    <p className="text-sm text-slate-600"><span className="font-semibold">Nhận xét:</span> {res.explanation}</p>
                                                 </div>
                                             </div>
-                                            
-                                            <div className="mb-5">
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <span className="text-xs font-bold text-slate-500 uppercase">Đáp án tham khảo (Tự nhiên nhất):</span>
-                                                    {/* Nút nghe đáp án - Chỉ hiện nếu đáp án là tiếng Anh (Mode 1) */}
-                                                    {mode === 1 && (
-                                                        <button onClick={() => speakText(feedback.correction)} className="text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded flex items-center gap-1 text-xs font-medium">
-                                                            <IconSpeaker /> Nghe
-                                                        </button>
-                                                    )}
-                                                </div>
-                                                <p className="font-medium text-lg text-slate-900 leading-relaxed whitespace-pre-wrap p-4 bg-white rounded-lg border border-slate-100">
+                                        ))
+                                    ) : (
+                                        // PARAGRAPH FEEDBACK
+                                        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                                            <div className="mb-6">
+                                                <h3 className="font-bold text-slate-700 mb-2">Bài sửa hoàn chỉnh:</h3>
+                                                <p className="text-lg text-slate-900 leading-relaxed p-4 bg-green-50 rounded-lg border border-green-100">
                                                     {feedback.correction}
                                                 </p>
+                                                {mode===1 && <button onClick={() => speakText(feedback.correction)} className="mt-2 text-indigo-600 text-sm font-medium flex items-center gap-1"><IconSpeaker/> Nghe bài mẫu</button>}
                                             </div>
-
-                                            <div className="text-slate-700 text-sm leading-relaxed">
-                                                <span className="font-bold text-slate-900 block mb-1">Nhận xét chi tiết:</span>
-                                                {feedback.explanation}
-                                            </div>
-                                            
-                                            <div className="flex gap-3 mt-6">
-                                                <button onClick={() => {setStep('challenge'); setFeedback(null);}} className="flex-1 py-3 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 font-medium transition-colors">Làm lại</button>
-                                                <button onClick={handleReset} className="flex-1 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-medium shadow-md transition-colors">Bài tiếp theo</button>
+                                            <div>
+                                                <h3 className="font-bold text-slate-700 mb-2">Chi tiết lỗi sai:</h3>
+                                                <p className="text-slate-600 leading-relaxed whitespace-pre-wrap">{feedback.explanation}</p>
                                             </div>
                                         </div>
                                     )}
