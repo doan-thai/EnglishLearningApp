@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PolyGlot Coach V3 - Split View</title>
+    <title>PolyGlot Coach V3 - Split View (Có Level)</title>
     
     <!-- React & ReactDOM -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -22,7 +22,6 @@
         body { font-family: 'Inter', sans-serif; }
         .fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-        /* Scrollbar đẹp hơn */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
@@ -45,35 +44,23 @@
         const IconArrowRight = () => <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>;
 
         const App = () => {
-            // --- State ---
             const [apiKey, setApiKey] = useState(localStorage.getItem('gemini_api_key') || '');
             const [showKeyInput, setShowKeyInput] = useState(!apiKey);
             
-            const [scope, setScope] = useState('word'); // 'word' (List) | 'paragraph'
-            const [difficulty, setDifficulty] = useState('medium');
-            const [mode, setMode] = useState(1); // 1: Viết Anh, 2: Dịch Việt
+            const [scope, setScope] = useState('word'); 
+            const [difficulty, setDifficulty] = useState('medium'); // easy, medium, hard
+            const [mode, setMode] = useState(1); 
             
             const [inputData, setInputData] = useState('');
-            const [step, setStep] = useState('input'); // input -> challenge
-            
-            // Data Structure cho Challenge
-            // Paragraph Mode: string
-            // Word Mode: Array [{ id: 1, word: 'cat', sentence: '...' }]
+            const [step, setStep] = useState('input');
             const [challenges, setChallenges] = useState(null); 
-            
-            // Data Structure cho User Answer
-            // Paragraph Mode: string
-            // Word Mode: Object { 0: "answer1", 1: "answer2" }
             const [userAnswers, setUserAnswers] = useState({});
-            
-            // Data Structure cho Feedback
             const [feedback, setFeedback] = useState(null);
             
             const [loading, setLoading] = useState(false);
             const [error, setError] = useState('');
             const rightColumnRef = useRef(null);
 
-            // --- Helpers ---
             const saveApiKey = (rawKey) => {
                 const key = rawKey.trim();
                 if (!key.startsWith('AIza')) {
@@ -97,7 +84,6 @@
 
             const parseJSON = (text) => {
                 try {
-                    // Cố gắng lọc markdown block nếu AI trả về ```json ... ```
                     const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
                     return JSON.parse(cleanText);
                 } catch (e) {
@@ -122,7 +108,6 @@
                 return parseJSON(data.candidates?.[0]?.content?.parts?.[0]?.text);
             };
 
-            // --- Logic Tạo Đề Bài ---
             const handleGenerate = async () => {
                 if (!inputData.trim()) return;
                 setLoading(true); setError(''); setFeedback(null); setUserAnswers({});
@@ -132,22 +117,25 @@
                     let sys = "Bạn là trợ lý ngôn ngữ. Trả về JSON thuần túy.";
                     const words = inputData.split(/[\n,;]+/).map(w => w.trim()).filter(w => w);
 
+                    // Xử lý mức độ khó
+                    let levelDesc = "";
+                    if (difficulty === 'easy') levelDesc = "đơn giản, ngắn gọn, dùng từ vựng cơ bản (A1-A2)";
+                    else if (difficulty === 'medium') levelDesc = "tự nhiên, độ dài vừa phải, dùng cấu trúc câu ghép (B1-B2)";
+                    else levelDesc = "phức tạp, học thuật, văn phong báo chí hoặc chuyên ngành (C1-C2)";
+
                     if (scope === 'word') {
-                        // Word Mode: Generate List
                         sys += " Output format: { \"items\": [ { \"word\": \"...\", \"sentence\": \"...\" } ] }";
-                        if (mode === 1) { // Luyện viết Anh -> Câu Việt
-                            prompt = `Danh sách từ: ${words.join(', ')}. Với MỖI từ, hãy tạo 1 câu tiếng Việt chứa nghĩa của nó (KHÔNG dùng từ tiếng Anh đó).`;
-                        } else { // Luyện dịch Việt -> Câu Anh
-                            prompt = `Danh sách từ: ${words.join(', ')}. Với MỖI từ, hãy tạo 1 câu tiếng Anh (${difficulty}) chứa từ đó.`;
+                        if (mode === 1) { 
+                            prompt = `Danh sách từ: ${words.join(', ')}. Với MỖI từ, hãy tạo 1 câu tiếng Việt mang ý nghĩa (${levelDesc}) chứa nghĩa của nó (KHÔNG dùng từ tiếng Anh đó).`;
+                        } else { 
+                            prompt = `Danh sách từ: ${words.join(', ')}. Với MỖI từ, hãy tạo 1 câu tiếng Anh (${levelDesc}) chứa từ đó.`;
                         }
                     } else {
-                        // Paragraph Mode
                         sys += " Output format: { \"content\": \"...\" }";
-                        const level = difficulty === 'hard' ? 'nâng cao, học thuật' : 'thông dụng';
                         if (mode === 1) {
-                            prompt = `Viết đoạn văn tiếng Việt (${level}) sao cho khi dịch sang Anh bắt buộc phải dùng các từ: ${words.join(', ')}.`;
+                            prompt = `Viết đoạn văn tiếng Việt (${levelDesc}) sao cho khi dịch sang Anh bắt buộc phải dùng các từ: ${words.join(', ')}.`;
                         } else {
-                            prompt = `Viết đoạn văn tiếng Anh (${level}) kết nối các từ: ${words.join(', ')}.`;
+                            prompt = `Viết đoạn văn tiếng Anh (${levelDesc}) kết nối các từ: ${words.join(', ')}.`;
                         }
                     }
 
@@ -166,7 +154,6 @@
                 }
             };
 
-            // --- Logic Chấm Điểm ---
             const handleCheck = async () => {
                 setLoading(true); setError('');
                 try {
@@ -174,10 +161,8 @@
                     let sys = "";
 
                     if (scope === 'word') {
-                        // Batch Evaluation
                         sys = `Bạn là giáo viên. Trả về JSON: { "results": [ { "score": number, "correction": "string", "explanation": "string" } ] }. Thứ tự mảng kết quả phải khớp với thứ tự mảng đầu vào.`;
                         
-                        // Chuẩn bị dữ liệu gửi đi
                         const submission = challenges.map((c, idx) => ({
                             original_word: c.word,
                             question_context: c.sentence,
@@ -191,17 +176,12 @@
                         - Nếu Mode 2: Kiểm tra bản dịch tiếng Việt có tự nhiên không.`;
                         
                     } else {
-                        // Paragraph Evaluation
                         sys = `Bạn là giáo viên. Trả về JSON: { "score": number, "correction": "string", "explanation": "string" }`;
                         prompt = `Đề bài: ${challenges}\nBài làm của user: ${userAnswers['paragraph']}\nMode: ${mode === 1 ? "Viết Anh" : "Dịch Việt"}. Chấm điểm, sửa lỗi và giải thích chi tiết.`;
                     }
 
                     const res = await callGemini(prompt, sys);
-                    
-                    // Nếu word mode, map kết quả vào ID
                     setFeedback(res); 
-                    
-                    // Scroll cột phải lên đầu để xem kết quả
                     if(rightColumnRef.current) rightColumnRef.current.scrollTop = 0;
 
                 } catch (err) {
@@ -211,10 +191,8 @@
                 }
             };
 
-            // --- UI Components ---
             return (
                 <div className="flex flex-col h-full bg-slate-50">
-                    {/* Header */}
                     <header className="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center shadow-sm z-10">
                         <div className="flex items-center gap-2">
                             <span className="text-indigo-600"><IconBook /></span>
@@ -225,7 +203,6 @@
                         </button>
                     </header>
 
-                    {/* API Key Modal */}
                     {showKeyInput && (
                         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                             <div className="bg-white p-6 rounded-2xl shadow-2xl max-w-md w-full">
@@ -236,32 +213,47 @@
                         </div>
                     )}
 
-                    {/* MAIN CONTENT SPLIT VIEW */}
                     <div className="flex-1 flex overflow-hidden">
-                        
-                        {/* LEFT COLUMN: Input & Work Area */}
                         <div className="w-full lg:w-1/2 flex flex-col border-r border-slate-200 bg-white h-full overflow-y-auto">
-                            
-                            {/* 1. Settings Area (Luôn hiện ở trên cùng cột trái) */}
                             <div className="p-6 border-b border-slate-100 bg-slate-50/50">
                                 {step === 'input' ? (
                                     <div className="space-y-4 fade-in">
                                         {error && <div className="p-3 bg-red-100 text-red-700 rounded-lg text-sm">{error}</div>}
                                         
-                                        <div className="flex gap-2">
-                                            <button onClick={() => setScope('word')} className={`flex-1 py-2 rounded-lg text-sm font-semibold border ${scope==='word' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white border-slate-300'}`}>Từ đơn (Nhiều câu)</button>
-                                            <button onClick={() => setScope('paragraph')} className={`flex-1 py-2 rounded-lg text-sm font-semibold border ${scope==='paragraph' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white border-slate-300'}`}>Đoạn văn (1 bài)</button>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <button onClick={() => setScope('word')} className={`py-2 rounded-lg text-sm font-semibold border ${scope==='word' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white border-slate-300'}`}>Từ đơn (Nhiều câu)</button>
+                                            <button onClick={() => setScope('paragraph')} className={`py-2 rounded-lg text-sm font-semibold border ${scope==='paragraph' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white border-slate-300'}`}>Đoạn văn (1 bài)</button>
                                         </div>
 
-                                        <div className="flex gap-2">
-                                            <button onClick={() => setMode(1)} className={`flex-1 py-2 rounded-lg text-sm font-medium border ${mode===1 ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-white border-slate-200'}`}>Luyện Viết (Anh)</button>
-                                            <button onClick={() => setMode(2)} className={`flex-1 py-2 rounded-lg text-sm font-medium border ${mode===2 ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-white border-slate-200'}`}>Luyện Dịch (Việt)</button>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <button onClick={() => setMode(1)} className={`py-2 rounded-lg text-sm font-medium border ${mode===1 ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-white border-slate-200'}`}>Luyện Viết (Anh)</button>
+                                            <button onClick={() => setMode(2)} className={`py-2 rounded-lg text-sm font-medium border ${mode===2 ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-white border-slate-200'}`}>Luyện Dịch (Việt)</button>
+                                        </div>
+
+                                        {/* --- DIFFICULTY SELECTOR (MỚI THÊM) --- */}
+                                        <div className="mt-2">
+                                            <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Độ khó bài tập</label>
+                                            <div className="flex gap-2">
+                                                {['easy', 'medium', 'hard'].map(level => (
+                                                    <button 
+                                                        key={level}
+                                                        onClick={() => setDifficulty(level)}
+                                                        className={`flex-1 py-1.5 rounded-lg text-xs font-bold border capitalize transition-all ${
+                                                            difficulty === level 
+                                                            ? 'bg-slate-700 text-white border-slate-700 shadow-md' 
+                                                            : 'bg-white text-slate-500 border-slate-200 hover:border-slate-400'
+                                                        }`}
+                                                    >
+                                                        {level === 'easy' ? 'Dễ (Easy)' : level === 'medium' ? 'Vừa (Medium)' : 'Khó (Hard)'}
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
 
                                         <textarea 
                                             value={inputData} onChange={e => setInputData(e.target.value)}
                                             placeholder={scope === 'word' ? "Nhập danh sách từ (xuống dòng hoặc phẩy)...\nVí dụ:\nrun\nfast\nhappy" : "Nhập danh sách từ để viết đoạn văn..."}
-                                            className="w-full p-4 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-200 outline-none h-32 resize-none"
+                                            className="w-full p-4 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-200 outline-none h-32 resize-none mt-2"
                                         />
 
                                         <button onClick={handleGenerate} disabled={loading || !inputData} className="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 flex justify-center items-center gap-2">
@@ -272,18 +264,19 @@
                                     <div className="flex justify-between items-center">
                                         <div>
                                             <span className="text-xs font-bold text-slate-500 uppercase block">Chế độ</span>
-                                            <span className="font-semibold text-slate-800">{scope === 'word' ? 'Bài tập từng câu' : 'Bài tập đoạn văn'}</span>
+                                            <span className="font-semibold text-slate-800 flex items-center gap-2">
+                                                {scope === 'word' ? 'Bài tập từng câu' : 'Bài tập đoạn văn'}
+                                                <span className="text-xs px-2 py-0.5 bg-slate-200 rounded text-slate-600 font-normal uppercase">{difficulty}</span>
+                                            </span>
                                         </div>
                                         <button onClick={() => {setStep('input'); setFeedback(null);}} className="text-indigo-600 text-sm font-medium hover:underline">Tạo bài mới</button>
                                     </div>
                                 )}
                             </div>
 
-                            {/* 2. Workspace Area (Nơi làm bài) */}
                             {step === 'challenge' && (
                                 <div className="p-6 flex-1 bg-slate-50 space-y-6">
                                     {scope === 'word' ? (
-                                        // WORD MODE LIST
                                         challenges.map((item, idx) => (
                                             <div key={idx} className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 fade-in" style={{animationDelay: `${idx * 0.1}s`}}>
                                                 <div className="flex justify-between items-start mb-3">
@@ -302,7 +295,6 @@
                                             </div>
                                         ))
                                     ) : (
-                                        // PARAGRAPH MODE
                                         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 fade-in">
                                             <div className="flex justify-between mb-2">
                                                 <span className="text-xs font-bold text-slate-400 uppercase">Đề bài</span>
@@ -320,7 +312,6 @@
                                         </div>
                                     )}
 
-                                    {/* Submit Button */}
                                     <div className="pt-4 pb-8">
                                         <button onClick={handleCheck} disabled={loading} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 flex justify-center items-center gap-2">
                                             {loading ? 'Đang chấm điểm...' : <><IconCheck /> Nộp bài & Xem kết quả</>}
@@ -330,7 +321,6 @@
                             )}
                         </div>
 
-                        {/* RIGHT COLUMN: Results & Feedback (Sticky) */}
                         <div ref={rightColumnRef} className="hidden lg:block w-1/2 h-full bg-slate-100 overflow-y-auto border-l border-slate-200">
                             {!feedback ? (
                                 <div className="h-full flex flex-col items-center justify-center text-slate-400 p-8 text-center">
@@ -352,7 +342,6 @@
                                     </div>
 
                                     {scope === 'word' ? (
-                                        // LIST FEEDBACK
                                         feedback.results.map((res, idx) => (
                                             <div key={idx} className={`p-5 rounded-xl border-2 bg-white ${res.score >= 8 ? 'border-green-100' : 'border-orange-100'}`}>
                                                 <div className="flex justify-between items-center mb-3">
@@ -376,7 +365,6 @@
                                             </div>
                                         ))
                                     ) : (
-                                        // PARAGRAPH FEEDBACK
                                         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                                             <div className="mb-6">
                                                 <h3 className="font-bold text-slate-700 mb-2">Bài sửa hoàn chỉnh:</h3>
