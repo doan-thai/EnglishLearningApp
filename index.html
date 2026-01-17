@@ -122,10 +122,10 @@
 
                     // --- LOGIC CHO TỪNG SCOPE ---
                     if (scope === 'vocab') {
-                        // NEW: Chế độ Từ vựng
-                        sys += " Output format: { \"items\": [ { \"english\": \"...\", \"vietnamese\": \"...\" } ] }";
-                        prompt = `Danh sách từ tiếng Anh: ${words.join(', ')}. Hãy trả về danh sách JSON gồm từ gốc (english) và nghĩa tiếng Việt ngắn gọn, phổ biến nhất (vietnamese).`;
-                    } 
+                        // NEW: Chế độ Từ vựng 
+                        sys += " Output format: { \"items\": [ { \"english\": \"...\", \"type\": \"...\", \"vietnamese\": \"...\" } ] }";
+                        prompt = `Danh sách từ tiếng Anh: ${words.join(', ')}. Hãy trả về danh sách JSON gồm: từ gốc (english), loại từ viết tắt nằm trong ngoặc đơn ví dụ (n), (v), (adj)... gán vào trường "type", và nghĩa tiếng Việt ngắn gọn (vietnamese).`;
+                    }
                     else if (scope === 'word') {
                         // Chế độ Câu
                         sys += " Output format: { \"items\": [ { \"word\": \"...\", \"sentence\": \"...\" } ] }";
@@ -320,8 +320,11 @@
                                                 {/* Hiển thị câu hỏi */}
                                                 <p className="text-lg text-slate-800 font-medium mb-4">
                                                     {scope === 'vocab' 
-                                                        ? (mode === 1 ? item.english : item.vietnamese) // Vocab: Hiện Anh hoặc Việt
-                                                        : item.sentence // Word: Hiện câu
+                                                        ? (mode === 1 
+                                                            // Nếu là Anh -> Việt thì hiện thêm loại từ (item.type)
+                                                            ? <span>{item.english} <span className="text-sm text-slate-500 font-normal ml-2">{item.type}</span></span> 
+                                                            : item.vietnamese) 
+                                                        : item.sentence 
                                                     }
                                                 </p>
                                                 
